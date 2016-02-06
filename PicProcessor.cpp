@@ -2,6 +2,7 @@
 #include "PicProcessor.h"
 #include <wx/event.h>
 
+/*
 class BlankPanel: public PicProcPanel
 {
 	public:
@@ -21,7 +22,7 @@ class BlankPanel: public PicProcPanel
 		wxPanel *panel;
 
 };
-
+*/
 
 PicProcessor::PicProcessor(wxString name, wxString command, wxTreeCtrl *tree, PicPanel *display, wxPanel *parameters, FIBITMAP *startpic) {
 	m_parameters = parameters;

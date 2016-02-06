@@ -19,6 +19,12 @@ bool FreeImage_Saturate16(FIBITMAP *src, double percentage);
 
 bool FreeImage_Gray16(FIBITMAP *src, double Rpct, double Gpct, double Bpct);
 
+//bool FreeImage_GetPixelColor16(FIBITMAP *dib, unsigned x, unsigned y, RGBQUAD *value); //FIRGB16 *value);
+
+bool FreeImage_GetPixelColor16(FIBITMAP *dib, unsigned x, unsigned y, FIRGB16 *value);
+
+FIBITMAP * FreeImage_3x3Convolve16(FIBITMAP *src, double kernel[3][3]);
+
 #endif
 
 

@@ -26,6 +26,7 @@
 #include "PicProcessorGray.h"
 #include "PicProcessorCrop.h"
 #include "PicProcessorResize.h"
+#include "PicProcessorSharpen.h"
 #include "myFileSelector.h"
 #include "util.h"
 
@@ -66,6 +67,7 @@ BEGIN_EVENT_TABLE(rawprocFrm,wxFrame)
 	EVT_MENU(ID_MNU_GRAY, rawprocFrm::MnuGrayClick)
 	EVT_MENU(ID_MNU_CROP, rawprocFrm::MnuCropClick)
 	EVT_MENU(ID_MNU_RESIZE, rawprocFrm::MnuResizeClick)
+	EVT_MENU(ID_MNU_SHARPEN, rawprocFrm::MnuSharpenClick)
 	EVT_MENU(ID_MNU_Cut,rawprocFrm::MnuCut1201Click)
 	EVT_MENU(ID_MNU_Copy,rawprocFrm::MnuCopy1202Click)
 	EVT_MENU(ID_MNU_Paste,rawprocFrm::MnuPaste1203Click)
@@ -142,6 +144,7 @@ void rawprocFrm::CreateGUIControls()
 	ID_MNU_ADDMnu_Obj->Append(ID_MNU_HIGHLIGHT,	_("Highlight"), _(""), wxITEM_NORMAL);
 	ID_MNU_ADDMnu_Obj->Append(ID_MNU_RESIZE,	_("Resize"), _(""), wxITEM_NORMAL);
 	ID_MNU_ADDMnu_Obj->Append(ID_MNU_SATURATION,	_("Saturation"), _(""), wxITEM_NORMAL);
+	ID_MNU_ADDMnu_Obj->Append(ID_MNU_SHARPEN,	_("Sharpen"), _(""), wxITEM_NORMAL);
 	ID_MNU_ADDMnu_Obj->Append(ID_MNU_SHADOW,	_("Shadow"), _(""), wxITEM_NORMAL);
 	
 	
@@ -674,6 +677,15 @@ void rawprocFrm::MnuResizeClick(wxCommandEvent& event)
 {
 	SetStatusText("");
 	PicProcessorResize *c = new PicProcessorResize("resize", "640,0,bicubic", commandtree, pic, parameters);
+	c->processPic();
+	wxSafeYield(this);
+	if (!commandtree->GetNextSibling(c->GetId()).IsOk()) CommandTreeSetDisplay(c->GetId());
+}
+
+void rawprocFrm::MnuSharpenClick(wxCommandEvent& event)
+{
+	SetStatusText("");
+	PicProcessorSharpen *c = new PicProcessorSharpen("sharpen", "", commandtree, pic, parameters);
 	c->processPic();
 	wxSafeYield(this);
 	if (!commandtree->GetNextSibling(c->GetId()).IsOk()) CommandTreeSetDisplay(c->GetId());

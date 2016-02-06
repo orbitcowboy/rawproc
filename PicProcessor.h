@@ -53,5 +53,26 @@ class PicProcessor: public wxTreeItemData
 
 };
 
+class BlankPanel: public PicProcPanel
+{
+	public:
+		BlankPanel(wxPanel *parent, PicProcessor *proc, wxString params): PicProcPanel(parent, proc, params)
+		{
+			panel = new wxPanel(this);
+			b->Add(panel, 1, wxALIGN_LEFT, 10);
+			SetSizerAndFit(b);
+		}
+
+		~BlankPanel()
+		{
+			panel->~wxPanel();
+		}
+
+	private:
+		wxPanel *panel;
+
+};
+
+
 
 #endif
