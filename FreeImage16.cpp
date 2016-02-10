@@ -357,15 +357,15 @@ bool FreeImage_GetPixelColor16(FIBITMAP *dib, unsigned x, unsigned y, FIRGB16 *v
 	//int bytespp = FreeImage_GetLine(dib) / FreeImage_GetWidth(dib);
 	int bytespp = bpp/8;
 
-	unsigned width = FreeImage_GetWidth(dib);
-	unsigned height = FreeImage_GetHeight(dib);
+	//unsigned width = FreeImage_GetWidth(dib);
+	//unsigned height = FreeImage_GetHeight(dib);
 	unsigned pitch = FreeImage_GetPitch(dib);
 
-	//BYTE *bits = (BYTE*)FreeImage_GetBits(dib);
-	//bits += (pitch*(y))+(x*(bytespp));
+	BYTE *bits = (BYTE*)FreeImage_GetBits(dib);
+	bits += (pitch*(y))+(x*(bytespp));
 
-	BYTE *bits = FreeImage_GetScanLine(dib, y);
-	bits += x*bytespp;
+	//BYTE *bits = FreeImage_GetScanLine(dib, y);
+	//bits += x*bytespp;
 
 	FIRGB16 *pixel;
 	switch(bpp) {
@@ -409,12 +409,17 @@ FIBITMAP * FreeImage_3x3Convolve16(FIBITMAP *src, double kernel[3][3])
 {
 	unsigned x, y;
 	BYTE *bits = NULL;
-    
+
 	if(!FreeImage_HasPixels(src))
 		return false;
 	
 	int bpp = FreeImage_GetBPP(src);
-	int bytespp = FreeImage_GetLine(src) / FreeImage_GetWidth(src);
+	//int bytespp = FreeImage_GetLine(src) / FreeImage_GetWidth(src);
+	int bytespp = bpp/8;
+
+	unsigned pitch = FreeImage_GetPitch(src);
+	BYTE *dibbits = (BYTE*)FreeImage_GetBits(src);
+	//bits = dibbits +(pitch*(y))+(x*(bytespp));
 
 	double R, G, B;
 	FIRGB16 value;
@@ -434,7 +439,14 @@ FIBITMAP * FreeImage_3x3Convolve16(FIBITMAP *src, double kernel[3][3])
 						for (int ky=0; ky<3; ky++) {
 							int ix = x-1+kx;
 							int iy = y-1+ky;
+//todo: get inline pixel access working...
 							FreeImage_GetPixelColor16(src, ix, iy, &value);
+							//FIRGB16 *pixel = (FIRGB16 *) dibbits +(pitch*(iy))+(ix*(bytespp));
+
+//							R += pixel->red   * kernel[kx][ky];
+//							G += pixel->green * kernel[kx][ky];
+//							B += pixel->blue  * kernel[kx][ky];
+
 							R += value.red   * kernel[kx][ky];
 							G += value.green * kernel[kx][ky];
 							B += value.blue  * kernel[kx][ky];
@@ -465,10 +477,17 @@ FIBITMAP * FreeImage_3x3Convolve16(FIBITMAP *src, double kernel[3][3])
 						for (int ky=0; ky<3; ky++) {
 							int ix = x-1+kx;
 							int iy = y-1+ky;
-							FreeImage_GetPixelColor16(src, ix, iy, &value);
-							R += value.red   * kernel[kx][ky];
-							G += value.green * kernel[kx][ky];
-							B += value.blue  * kernel[kx][ky];
+
+							//FreeImage_GetPixelColor16(src, ix, iy, &value);
+							BYTE *pixel =  dibbits +(pitch*(iy))+(ix*(bytespp));
+
+							R += pixel[FI_RGBA_RED]   * kernel[kx][ky];
+							G += pixel[FI_RGBA_GREEN] * kernel[kx][ky];
+							B += pixel[FI_RGBA_BLUE]  * kernel[kx][ky];
+
+//							R += value.red   * kernel[kx][ky];
+//							G += value.green * kernel[kx][ky];
+//							B += value.blue  * kernel[kx][ky];
 
 //							R += value.rgbRed   * kernel[kx][ky];
 //							G += value.rgbGreen * kernel[kx][ky];

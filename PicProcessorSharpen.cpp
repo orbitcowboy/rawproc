@@ -6,6 +6,8 @@
 #include "wxTouchSlider.h"
 #include "util.h"
 
+#include <wx/time.h> 
+
 /*
 class SharpenPanel: public PicProcPanel
 {
@@ -82,22 +84,63 @@ void PicProcessorSharpen::showParams()
 
 
 bool PicProcessorSharpen::processPic() {
-	wxString algo = "";
-	double kernel[3][3] =  
+	wxString msg = "";
+	long t;	
+
+	double sharpen[3][3] =  
 	{ 
 		 0.0, -1.0,  0.0, 
 		-1.0,  5.0, -1.0, 
 		 0.0, -1.0,  0.0 
 	}; 
+	double edge[3][3] =  
+	{ 
+		 0.0,  1.0, 0.0, 
+		 1.0, -4.0, 1.0, 
+		 0.0,  1.0, 0.0 
+	}; 
+	double blur[3][3] =  
+	{ 
+		 1.0, 1.0,  1.0, 
+		 1.0, 1.0,  1.0, 
+		 1.0, 1.0,  1.0 
+	}; 
+	double betterblur[3][3] =  
+	{ 
+		 0.0, 0.2, 0.0, 
+		 0.2, 0.2, 0.2, 
+		 0.0, 0.2, 0.0 
+	}; 
 	m_tree->SetItemBold(GetId(), true);
 	((wxFrame*) m_parameters->GetParent())->SetStatusText("sharpen...");
 
 	bool result = true;
+
+	//sharpen:
+	((wxFrame*) m_parameters->GetParent())->SetStatusText("edge...");
+	t = wxGetLocalTime();
 	FIBITMAP *prev = dib;
-
-	dib = FreeImage_3x3Convolve16(getPreviousPicProcessor()->getProcessedPic(), kernel); 
-
+	dib = FreeImage_3x3Convolve16(getPreviousPicProcessor()->getProcessedPic(), sharpen); 
 	if (prev) FreeImage_Unload(prev);
+	msg.Append(wxString::Format("sharpen: %ld sec\n", wxGetLocalTime()-t));
+
+
+	//blur:
+	//((wxFrame*) m_parameters->GetParent())->SetStatusText("blur...");
+	//t = wxGetLocalTime();
+	//prev = dib;
+	//dib = FreeImage_3x3Convolve16(prev, betterblur); 
+	//if (prev) FreeImage_Unload(prev);
+	//msg.Append(wxString::Format("blur: %ld sec\n", wxGetLocalTime()-t));
+
+	//blur:
+	//((wxFrame*) m_parameters->GetParent())->SetStatusText("more blur...");
+	//t = wxGetLocalTime();
+	//prev = dib;
+	//dib = FreeImage_3x3Convolve16(prev, betterblur); 
+	//if (prev) FreeImage_Unload(prev);
+	//msg.Append(wxString::Format("more blur: %ld sec\n", wxGetLocalTime()-t));
+
 
 	//put in every processPic()...
 	if (m_tree->GetItemState(GetId()) == 1) m_display->SetPic(dib);
@@ -109,6 +152,7 @@ bool PicProcessorSharpen::processPic() {
 	}
 	m_tree->SetItemBold(GetId(), false);
 	((wxFrame*) m_parameters->GetParent())->SetStatusText("");
+	wxMessageBox(msg);
 	return result;
 }
 

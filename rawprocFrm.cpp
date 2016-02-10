@@ -346,6 +346,7 @@ void rawprocFrm::OpenFile(wxString fname, int flag)
 	FREE_IMAGE_FORMAT fif;
 
 	fif = FreeImage_GetFileType(fname, 0);
+	//if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename(fname);
 	if(fif != FIF_UNKNOWN) {
 		SetStatusText("Loading file...");
 		commandtree->DeleteAllItems();
