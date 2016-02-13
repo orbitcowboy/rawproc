@@ -8,65 +8,57 @@
 
 #include <wx/time.h> 
 
-/*
 class SharpenPanel: public PicProcPanel
 {
 	public:
 		SharpenPanel(wxPanel *parent, PicProcessor *proc, wxString params): PicProcPanel(parent, proc, params)
 		{
 			wxSizerFlags flags = wxSizerFlags().Left().Border(wxLEFT|wxRIGHT).Expand();
-			wxArrayString algos;
-			algos.Add("box");
-			algos.Add("bilinear");
-			algos.Add("bspline");
-			algos.Add("bicubic");
-			algos.Add("catmullrom");
-			algos.Add("lanczos3");
+			wxArrayString mode;
+			mode.Add("plain");
+			mode.Add("edgemask");
 			wxArrayString p = split(params,",");
-			b->Add(new wxStaticText(this,-1, "width (0 for original aspect)", wxDefaultPosition, wxSize(200,20)),  flags);
-			widthedit = new wxTextCtrl(this, wxID_ANY, p[0], wxDefaultPosition, wxSize(100,20),wxTE_PROCESS_ENTER);
-			b->Add(widthedit, flags);
-			b->Add(new wxStaticText(this,-1, "height (0 for original aspect)", wxDefaultPosition, wxSize(200,20)), flags);
-			heightedit = new wxTextCtrl(this, wxID_ANY, p[1], wxDefaultPosition, wxSize(100,20),wxTE_PROCESS_ENTER);
-			b->Add(heightedit, flags);		
-			algoselect = new wxRadioBox (this, wxID_ANY, "Resize Algorithm", wxDefaultPosition, wxSize(100,200),  algos, 1, wxRA_SPECIFY_COLS);
-			if (p.size() >=3) {
-				for (int i=0; i<algos.size(); i++) {
-					if (p[2] == algos[i]) algoselect->SetSelection(i);
+			b->Add(new wxStaticText(this,-1, "edge threshold", wxDefaultPosition, wxSize(200,20)),  flags);
+			thresholdedit = new wxTextCtrl(this, wxID_ANY, p[1], wxDefaultPosition, wxSize(100,20),wxTE_PROCESS_ENTER);
+			b->Add(thresholdedit, flags);
+					
+			modeselect = new wxRadioBox (this, wxID_ANY, "Sharpen Mode", wxDefaultPosition, wxSize(100,100),  mode, 1, wxRA_SPECIFY_COLS);
+			if (p.size() >=2) {
+				for (int i=0; i<mode.size(); i++) {
+					if (p[0] == mode[i]) modeselect->SetSelection(i);
 				}
 			}
-			b->Add(algoselect, flags);	
+			b->Add(modeselect, flags);	
 			b->Add(new wxButton(this,-1, "Apply", wxDefaultPosition, wxSize(200,30)), flags);
 			SetSizerAndFit(b);
 			b->Layout();
 			Refresh();
 			Update();
 			SetFocus();
-			Bind(wxEVT_BUTTON,&ResizePanel::paramChanged, this);
+			Bind(wxEVT_BUTTON,&SharpenPanel::paramChanged, this);
 	
 		}
 
 		~SharpenPanel()
 		{
-			widthedit->~wxTextCtrl();
-			heightedit->~wxTextCtrl();
-			algoselect->~wxRadioBox();
+			thresholdedit->~wxTextCtrl();
+			modeselect->~wxRadioBox();
 		}
 
 		void paramChanged(wxCommandEvent& event)
 		{
-			q->setParams(wxString::Format("%s,%s,%s",widthedit->GetValue(),heightedit->GetValue(),algoselect->GetString(algoselect->GetSelection())));
+			q->setParams(wxString::Format("%s,%s",modeselect->GetString(modeselect->GetSelection()),thresholdedit->GetValue()));
 			event.Skip();
 		}
 
 
 	private:
 
-		wxTextCtrl *widthedit, *heightedit;
-		wxRadioBox *algoselect;
+		wxTextCtrl *thresholdedit;
+		wxRadioBox *modeselect;
 
 };
-*/
+
 
 PicProcessorSharpen::PicProcessorSharpen(wxString name, wxString command, wxTreeCtrl *tree, PicPanel *display, wxPanel *parameters): PicProcessor(name, command,  tree, display, parameters) 
 {
@@ -79,7 +71,8 @@ void PicProcessorSharpen::showParams()
 {
 	if (!m_parameters) return;
 	m_parameters->DestroyChildren();
-	r = new BlankPanel(m_parameters, this, c);
+	//r = new BlankPanel(m_parameters, this, c);
+	r = new SharpenPanel(m_parameters, this, c);
 }
 
 
@@ -116,30 +109,32 @@ bool PicProcessorSharpen::processPic() {
 
 	bool result = true;
 
-	//sharpen:
-	((wxFrame*) m_parameters->GetParent())->SetStatusText("edge...");
-	t = wxGetLocalTime();
-	FIBITMAP *prev = dib;
-	dib = FreeImage_3x3Convolve16(getPreviousPicProcessor()->getProcessedPic(), sharpen); 
-	if (prev) FreeImage_Unload(prev);
-	msg.Append(wxString::Format("sharpen: %ld sec\n", wxGetLocalTime()-t));
+	wxArrayString cp = split(getParams(),",");
+	int threshold =  atoi(cp[1]);
 
+	if (cp[0] == "plain") {
+		((wxFrame*) m_parameters->GetParent())->SetStatusText("sharpen...");
+		t = wxGetLocalTime();
+		FIBITMAP *prev = dib;
+		dib = FreeImage_3x3Convolve16(getPreviousPicProcessor()->getProcessedPic(), sharpen); 
+		if (prev) FreeImage_Unload(prev);
+		msg.Append(wxString::Format("sharpen: %ld sec\n", wxGetLocalTime()-t));
+	}
+	else {
 
-	//blur:
-	//((wxFrame*) m_parameters->GetParent())->SetStatusText("blur...");
-	//t = wxGetLocalTime();
-	//prev = dib;
-	//dib = FreeImage_3x3Convolve16(prev, betterblur); 
-	//if (prev) FreeImage_Unload(prev);
-	//msg.Append(wxString::Format("blur: %ld sec\n", wxGetLocalTime()-t));
-
-	//blur:
-	//((wxFrame*) m_parameters->GetParent())->SetStatusText("more blur...");
-	//t = wxGetLocalTime();
-	//prev = dib;
-	//dib = FreeImage_3x3Convolve16(prev, betterblur); 
-	//if (prev) FreeImage_Unload(prev);
-	//msg.Append(wxString::Format("more blur: %ld sec\n", wxGetLocalTime()-t));
+		FIBITMAP *prev = dib;
+		//FIBITMAP *orig = getPreviousPicProcessor()->getProcessedPic();
+		((wxFrame*) m_parameters->GetParent())->SetStatusText("find edges...");
+		FIBITMAP *edgedib = FreeImage_3x3Convolve16(getPreviousPicProcessor()->getProcessedPic(), edge);
+		((wxFrame*) m_parameters->GetParent())->SetStatusText("make mask...");
+		FIBITMAP *maskdib = FreeImage_ConvertTo8Bits(edgedib);
+		FreeImage_Unload(edgedib);
+		((wxFrame*) m_parameters->GetParent())->SetStatusText(wxString::Format("sharpen, threshold %d...", threshold));
+		dib = FreeImage_3x3Convolve16(getPreviousPicProcessor()->getProcessedPic(), sharpen, maskdib, threshold);
+		FreeImage_Unload(maskdib);
+		if (prev) FreeImage_Unload(prev);
+		//orig = NULL;
+	}
 
 
 	//put in every processPic()...
@@ -152,7 +147,7 @@ bool PicProcessorSharpen::processPic() {
 	}
 	m_tree->SetItemBold(GetId(), false);
 	((wxFrame*) m_parameters->GetParent())->SetStatusText("");
-	wxMessageBox(msg);
+	//wxMessageBox(msg);
 	return result;
 }
 

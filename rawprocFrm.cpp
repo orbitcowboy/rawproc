@@ -686,7 +686,7 @@ void rawprocFrm::MnuResizeClick(wxCommandEvent& event)
 void rawprocFrm::MnuSharpenClick(wxCommandEvent& event)
 {
 	SetStatusText("");
-	PicProcessorSharpen *c = new PicProcessorSharpen("sharpen", "", commandtree, pic, parameters);
+	PicProcessorSharpen *c = new PicProcessorSharpen("sharpen", "plain,4", commandtree, pic, parameters);
 	c->processPic();
 	wxSafeYield(this);
 	if (!commandtree->GetNextSibling(c->GetId()).IsOk()) CommandTreeSetDisplay(c->GetId());

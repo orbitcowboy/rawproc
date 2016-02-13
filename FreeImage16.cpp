@@ -405,7 +405,7 @@ bool FreeImage_GetPixelColor16(FIBITMAP *dib, unsigned x, unsigned y, FIRGB16 *v
 	return false;
 }
 
-FIBITMAP * FreeImage_3x3Convolve16(FIBITMAP *src, double kernel[3][3])
+FIBITMAP * FreeImage_3x3Convolve16(FIBITMAP *src, double kernel[3][3], FIBITMAP *mask, int threshold)
 {
 	unsigned x, y;
 	BYTE *bits = NULL;
@@ -432,33 +432,41 @@ FIBITMAP * FreeImage_3x3Convolve16(FIBITMAP *src, double kernel[3][3])
 				//bits =  FreeImage_GetScanLine(src, y);
 				FIRGB16 *srcbits = (FIRGB16 *)FreeImage_GetScanLine(src, y);
 				FIRGB16 *dstbits = (FIRGB16 *)FreeImage_GetScanLine(dst, y);
+				BYTE * maskbits = (BYTE *)FreeImage_GetScanLine(mask,y);
 				for(x = 1; x < FreeImage_GetWidth(src)-1; x++) {
+					if (mask && (maskbits[0] < threshold)) {
+						dstbits[x].red   = srcbits[x].red;
+						dstbits[x].green = srcbits[x].green;
+						dstbits[x].blue  = srcbits[x].blue;
 
-					R=0.0; G=0.0; B=0.0;
-					for (int kx=0; kx<3; kx++) {
-						for (int ky=0; ky<3; ky++) {
-							int ix = x-1+kx;
-							int iy = y-1+ky;
-//todo: get inline pixel access working...
-							FreeImage_GetPixelColor16(src, ix, iy, &value);
-							//FIRGB16 *pixel = (FIRGB16 *) dibbits +(pitch*(iy))+(ix*(bytespp));
-
-//							R += pixel->red   * kernel[kx][ky];
-//							G += pixel->green * kernel[kx][ky];
-//							B += pixel->blue  * kernel[kx][ky];
-
-							R += value.red   * kernel[kx][ky];
-							G += value.green * kernel[kx][ky];
-							B += value.blue  * kernel[kx][ky];
-
-//							R += value.rgbRed   * kernel[kx][ky];
-//							G += value.rgbGreen * kernel[kx][ky];
-//							B += value.rgbBlue  * kernel[kx][ky];
-						}
 					}
-					dstbits[x].red   = MIN(MAX(int(R), 0), 65535);
-					dstbits[x].green = MIN(MAX(int(G), 0), 65535);
-					dstbits[x].blue  = MIN(MAX(int(B), 0), 65535);
+					else {
+						R=0.0; G=0.0; B=0.0;
+						for (int kx=0; kx<3; kx++) {
+							for (int ky=0; ky<3; ky++) {
+								int ix = x-1+kx;
+								int iy = y-1+ky;
+//todo: get inline pixel access working...
+								FreeImage_GetPixelColor16(src, ix, iy, &value);
+								//FIRGB16 *pixel = (FIRGB16 *) dibbits +(pitch*(iy))+(ix*(bytespp));
+
+//								R += pixel->red   * kernel[kx][ky];
+//								G += pixel->green * kernel[kx][ky];
+//								B += pixel->blue  * kernel[kx][ky];
+
+								R += value.red   * kernel[kx][ky];
+								G += value.green * kernel[kx][ky];
+								B += value.blue  * kernel[kx][ky];
+
+//								R += value.rgbRed   * kernel[kx][ky];
+//								G += value.rgbGreen * kernel[kx][ky];
+//								B += value.rgbBlue  * kernel[kx][ky];
+							}
+						}
+						dstbits[x].red   = MIN(MAX(int(R), 0), 65535);
+						dstbits[x].green = MIN(MAX(int(G), 0), 65535);
+						dstbits[x].blue  = MIN(MAX(int(B), 0), 65535);
+					}
 
 				}
 			}
@@ -470,35 +478,43 @@ FIBITMAP * FreeImage_3x3Convolve16(FIBITMAP *src, double kernel[3][3])
 				//bits =  FreeImage_GetScanLine(src, y);
 				BYTE *srcbits = FreeImage_GetScanLine(src, y);
 				BYTE *dstbits = FreeImage_GetScanLine(dst, y);
+				BYTE * maskbits = (BYTE *)FreeImage_GetScanLine(mask,y);
 				for(x = 1; x < FreeImage_GetWidth(src)-1; x++) {
-
-					R=0.0; G=0.0; B=0.0;
-					for (int kx=0; kx<3; kx++) {
-						for (int ky=0; ky<3; ky++) {
-							int ix = x-1+kx;
-							int iy = y-1+ky;
-
-							//FreeImage_GetPixelColor16(src, ix, iy, &value);
-							BYTE *pixel =  dibbits +(pitch*(iy))+(ix*(bytespp));
-
-							R += pixel[FI_RGBA_RED]   * kernel[kx][ky];
-							G += pixel[FI_RGBA_GREEN] * kernel[kx][ky];
-							B += pixel[FI_RGBA_BLUE]  * kernel[kx][ky];
-
-//							R += value.red   * kernel[kx][ky];
-//							G += value.green * kernel[kx][ky];
-//							B += value.blue  * kernel[kx][ky];
-
-//							R += value.rgbRed   * kernel[kx][ky];
-//							G += value.rgbGreen * kernel[kx][ky];
-//							B += value.rgbBlue  * kernel[kx][ky];
-						}
+					if (mask && (maskbits[0] < threshold)) {
+						dstbits[FI_RGBA_RED]   = srcbits[FI_RGBA_RED];
+						dstbits[FI_RGBA_GREEN] = srcbits[FI_RGBA_GREEN];
+						dstbits[FI_RGBA_BLUE]  = srcbits[FI_RGBA_BLUE];
 					}
-					dstbits[FI_RGBA_RED]   = MIN(MAX(int(R), 0), 255);
-					dstbits[FI_RGBA_GREEN] = MIN(MAX(int(G), 0), 255);
-					dstbits[FI_RGBA_BLUE]  = MIN(MAX(int(B), 0), 255);
+					else {
+						R=0.0; G=0.0; B=0.0;
+						for (int kx=0; kx<3; kx++) {
+							for (int ky=0; ky<3; ky++) {
+								int ix = x-1+kx;
+								int iy = y-1+ky;
+	
+								FreeImage_GetPixelColor16(src, ix, iy, &value);
+								//BYTE *pixel =  dibbits +(pitch*(iy))+(ix*(bytespp));
+	
+//								R += pixel[FI_RGBA_RED]   * kernel[kx][ky];
+//								G += pixel[FI_RGBA_GREEN] * kernel[kx][ky];
+//								B += pixel[FI_RGBA_BLUE]  * kernel[kx][ky];
+
+								R += value.red   * kernel[kx][ky];
+								G += value.green * kernel[kx][ky];
+								B += value.blue  * kernel[kx][ky];
+
+//								R += value.rgbRed   * kernel[kx][ky];
+//								G += value.rgbGreen * kernel[kx][ky];
+//								B += value.rgbBlue  * kernel[kx][ky];
+							}
+						}
+						dstbits[FI_RGBA_RED]   = MIN(MAX(int(R), 0), 255);
+						dstbits[FI_RGBA_GREEN] = MIN(MAX(int(G), 0), 255);
+						dstbits[FI_RGBA_BLUE]  = MIN(MAX(int(B), 0), 255);
+					}
 					srcbits += 3;
 					dstbits += 3;
+					maskbits++;
 
 				}
 			}

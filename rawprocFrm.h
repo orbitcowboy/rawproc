@@ -155,7 +155,7 @@ class rawprocFrm : public wxFrame
 		wxImage *img;
 		bool deleting;
 		wxTreeItemId olditem;
-		wxFileName filename;
+		wxFileName filename, sourcefilename;
 };
 
 #endif
