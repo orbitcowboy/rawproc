@@ -88,9 +88,9 @@ bool PicProcessorSharpen::processPic() {
 	}; 
 	double edge[3][3] =  
 	{ 
-		 0.0,  1.0, 0.0, 
-		 1.0, -4.0, 1.0, 
-		 0.0,  1.0, 0.0 
+		 0.0,  8.0, 0.0, 
+		 8.0, -32.0, 8.0, 
+		 0.0,  8.0, 0.0 
 	}; 
 	double blur[3][3] =  
 	{ 
@@ -126,9 +126,12 @@ bool PicProcessorSharpen::processPic() {
 		//FIBITMAP *orig = getPreviousPicProcessor()->getProcessedPic();
 		((wxFrame*) m_parameters->GetParent())->SetStatusText("find edges...");
 		FIBITMAP *edgedib = FreeImage_3x3Convolve16(getPreviousPicProcessor()->getProcessedPic(), edge);
+		FIBITMAP *blurdib = FreeImage_3x3Convolve16(edgedib, betterblur);
 		((wxFrame*) m_parameters->GetParent())->SetStatusText("make mask...");
-		FIBITMAP *maskdib = FreeImage_ConvertTo8Bits(edgedib);
+		FIBITMAP *maskdib = FreeImage_ConvertTo8Bits(blurdib);
+FreeImage_Save(FIF_JPEG, maskdib, "mask.jpg", 100);
 		FreeImage_Unload(edgedib);
+		FreeImage_Unload(blurdib);
 		((wxFrame*) m_parameters->GetParent())->SetStatusText(wxString::Format("sharpen, threshold %d...", threshold));
 		dib = FreeImage_3x3Convolve16(getPreviousPicProcessor()->getProcessedPic(), sharpen, maskdib, threshold);
 		FreeImage_Unload(maskdib);
