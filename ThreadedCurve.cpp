@@ -100,3 +100,58 @@ void ThreadedCurve::ApplyCurve(FIBITMAP *src, FIBITMAP *dst, std::vector<cp> ctp
 		}
 	}
 }
+
+void ThreadedCurve::ApplyCurveOMP(FIBITMAP *src, FIBITMAP *dst, std::vector<cp> ctpts, int threadcount)
+{
+	unsigned x, y;
+	BYTE * bsrcpix, * bdstpix;
+	FIRGB16 * wsrcpix, * wdstpix;
+
+	unsigned spitch = FreeImage_GetPitch(src);
+	unsigned dpitch = FreeImage_GetPitch(dst);
+	void * srcbits = FreeImage_GetBits(src);
+	void * dstbits = FreeImage_GetBits(dst);
+	unsigned w = FreeImage_GetWidth(src);
+	unsigned h = FreeImage_GetHeight(src);
+
+	std::vector<ThreadedCurve *> t;
+	Curve c;
+	BYTE LUT8[256];
+	WORD LUT16[65535];
+	c.setControlPoints(ctpts);
+	int bpp = FreeImage_GetBPP(src);
+	if (bpp == 24) {
+		c.clampto(0.0,255.0);
+		for (int x=0; x<256; x++) {
+			LUT8[x] = (BYTE)floor(c.getpoint(x) + 0.5);
+		}
+		#pragma omp parallel for
+		for(y = 0; y < h; y++) {
+			for(x = 0; x < w; x++) {
+				bdstpix = (BYTE *) dstbits + dpitch*y + 3*x;
+				BYTE *pixel = (BYTE *) (srcbits + spitch*y + 3*x);
+				bdstpix[FI_RGBA_RED]   = ((BYTE *) LUT8)[pixel[FI_RGBA_RED]];
+				bdstpix[FI_RGBA_GREEN] = ((BYTE *) LUT8)[pixel[FI_RGBA_GREEN]];
+				bdstpix[FI_RGBA_BLUE]  = ((BYTE *) LUT8)[pixel[FI_RGBA_BLUE]];
+			}
+		}
+	}
+	if (bpp == 48) {
+		c.scalepoints(256.0);
+		c.clampto(0.0,65535.0);
+		for (int x=0; x<65536; x++) {
+			LUT16[x] = (WORD)floor(c.getpoint(x) + 0.5);
+		}
+		#pragma omp parallel for
+		for(y = 0; y < h; y++) {
+			for(x = 0; x < w; x++) {
+				wdstpix = (FIRGB16 *) (dstbits + dpitch*y + 6*x);
+				FIRGB16 * pixel   = (FIRGB16 *) (srcbits + spitch*y + 6*x);
+				wdstpix->red   = ((WORD *) LUT16)[pixel->red];
+				wdstpix->green = ((WORD *) LUT16)[pixel->green];
+				wdstpix->blue  = ((WORD *) LUT16)[pixel->blue];
+			}
+		}
+	}
+}
+

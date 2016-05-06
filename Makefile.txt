@@ -52,7 +52,7 @@ all: rawproc
 
 rawproc: $(OBJECTS)
 ifeq ($(OBJDIR),win)
-	$(CXX)  $(WXFLAGS)  $(OBJECTS) $(LIBS)  $(WXLIBS) $(FILIBS) -s -o $(OBJDIR)/rawproc 
+	$(CXX)  $(WXFLAGS)  $(OBJECTS) $(LIBS)  $(WXLIBS) $(FILIBS) -fopenmp -s -o $(OBJDIR)/rawproc 
 else
 	$(CXX) $(WXFLAGS)  $(OBJECTS) $(LIBS)  $(WXLIBS)  -s -o $(OBJDIR)/rawproc
 endif

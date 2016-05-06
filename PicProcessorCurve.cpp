@@ -89,12 +89,20 @@ bool PicProcessorCurve::processPic() {
 	mark();
 	if (dib) FreeImage_Unload(dib);
 	dib = FreeImage_Clone(getPreviousPicProcessor()->getProcessedPic());
-	ThreadedCurve::ApplyCurve(getPreviousPicProcessor()->getProcessedPic(), dib, ctrlpts, threadcount);
+
+	if (wxConfigBase::Get()->Read("tool.curve.openmp","0") == "0")
+		ThreadedCurve::ApplyCurve(getPreviousPicProcessor()->getProcessedPic(), dib, ctrlpts, threadcount);
+	else
+		ThreadedCurve::ApplyCurveOMP(getPreviousPicProcessor()->getProcessedPic(), dib, ctrlpts, threadcount);
+
 	wxString d = duration();
 
-	if (wxConfigBase::Get()->Read("tool.curve.log","0") == "1")
-		log(wxString::Format("tool=curve,imagesize=%dx%d,imagebpp=%d,threads=%d,time=%s",FreeImage_GetWidth(dib), FreeImage_GetHeight(dib),FreeImage_GetBPP(dib),threadcount,d));
-
+	if (wxConfigBase::Get()->Read("tool.curve.log","0") == "1") {
+		if (wxConfigBase::Get()->Read("tool.curve.openmp","0") == "0")
+			log(wxString::Format("tool=curve(wxthread),imagesize=%dx%d,imagebpp=%d,threads=%d,time=%s",FreeImage_GetWidth(dib), FreeImage_GetHeight(dib),FreeImage_GetBPP(dib),threadcount,d));
+		else
+			log(wxString::Format("tool=curve(openmp),imagesize=%dx%d,imagebpp=%d,threads=%d,time=%s",FreeImage_GetWidth(dib), FreeImage_GetHeight(dib),FreeImage_GetBPP(dib),threadcount,d));
+	}
 
 	dirty = false;
 	((wxFrame*) m_parameters->GetParent())->SetStatusText("");

@@ -20,6 +20,8 @@ public:
 	ThreadedCurve(FIBITMAP *psrc, FIBITMAP *pdst, unsigned pstartrow, unsigned pincrement, void *pLUT);
 	~ThreadedCurve();
 	static void ApplyCurve(FIBITMAP *psrc, FIBITMAP *pdst, std::vector<cp> ctpts, int threadcount);
+	static void ApplyCurveOMP(FIBITMAP *src, FIBITMAP *dst, std::vector<cp> ctpts, int threadcount);
+
 
 protected:
 	virtual ExitCode Entry();
