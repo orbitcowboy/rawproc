@@ -17,6 +17,7 @@
 #include <wx/clipbrd.h>
 #include <wx/aboutdlg.h> 
 #include <wx/fileconf.h>
+#include <wx/process.h>
 
 #include "PicProcessorGamma.h"
 #include "PicProcessorBright.h"
@@ -59,6 +60,7 @@ BEGIN_EVENT_TABLE(rawprocFrm,wxFrame)
 	EVT_CLOSE(rawprocFrm::OnClose)
 	EVT_MENU(ID_MNU_OPEN, rawprocFrm::Mnuopen1003Click)
 	EVT_MENU(ID_MNU_OPENSOURCE, rawprocFrm::Mnuopensource1004Click)
+	EVT_MENU(ID_MNU_OPENDCRAW, rawprocFrm::MnuopendcrawClick)
 	EVT_MENU(ID_MNU_SAVE, rawprocFrm::Mnusave1009Click)
 	EVT_MENU(ID_MNU_EXIT, rawprocFrm::MnuexitClick)
 	EVT_MENU(ID_MNU_GAMMA, rawprocFrm::Mnugamma1006Click)
@@ -127,6 +129,7 @@ void rawprocFrm::CreateGUIControls()
 	wxMenu *ID_MNU_FILEMnu_Obj = new wxMenu();
 	ID_MNU_FILEMnu_Obj->Append(ID_MNU_OPEN, _("Open..."), _(""), wxITEM_NORMAL);
 	ID_MNU_FILEMnu_Obj->Append(ID_MNU_OPENSOURCE, _("Open Source..."), _(""), wxITEM_NORMAL);
+	ID_MNU_FILEMnu_Obj->Append(ID_MNU_OPENDCRAW, _("Open with dcraw..."), _(""), wxITEM_NORMAL);
 	ID_MNU_FILEMnu_Obj->Append(ID_MNU_SAVE, _("Save..."), _(""), wxITEM_NORMAL);
 	ID_MNU_FILEMnu_Obj->AppendSeparator();
 	ID_MNU_FILEMnu_Obj->Append(ID_MNU_EXIT, _("Exit"), _(""), wxITEM_NORMAL);
@@ -470,6 +473,69 @@ void rawprocFrm::OpenFileSource(wxString fname)
 	}
 }
 
+wxString dcrawcmd = "dcraw $file -c -T -4";
+
+wxInputStream *pstream;
+
+unsigned DLL_CALLCONV
+ReadProc(void *buffer, unsigned size, unsigned count, fi_handle handle) {
+	return (unsigned) pstream->ReadAll(buffer, size);
+}
+
+int DLL_CALLCONV
+SeekProc(fi_handle handle, long offset, int origin) {
+	wxSeekMode mode;
+	switch (origin) {
+		case SEEK_SET:
+			mode = wxFromStart;
+			break;
+		case SEEK_CUR:
+			mode = wxFromCurrent;
+			break;
+		case SEEK_END:
+			mode = wxFromEnd;
+			break;
+	}
+	return (int) pstream->SeekI(offset,  mode );
+}
+
+long DLL_CALLCONV
+TellProc(fi_handle handle) {
+	return (long) pstream->TellI();
+}
+
+void rawprocFrm::OpenFileDCRaw(wxString fname, int flag)
+{
+	FreeImageIO io;
+	FIBITMAP *dib;
+	filename.Assign(fname);
+	sourcefilename.Clear();
+	SetStatusText(wxString::Format("Loading %s with dcraw.",filename.GetFullName() ));
+	dcrawcmd.Replace("$file",fname);
+	commandtree->DeleteAllItems();
+	wxMessageBox(dcrawcmd);
+	wxProcess *p = new wxProcess(wxPROCESS_REDIRECT);
+	//p->Redirect();
+	wxExecute(dcrawcmd,wxEXEC_ASYNC, p);
+	pstream = p->GetInputStream();
+	io.read_proc = ReadProc; // pointer to function that calls fread
+	io.write_proc = NULL; // not needed for loading
+	io.seek_proc = SeekProc; // pointer to function that calls fseek
+	io.tell_proc = TellProc; // pointer to function that calls ftell
+	dib = FreeImage_LoadFromHandle(FIF_TIFF, &io, pstream, 0);
+	PicProcessor *picdata = new PicProcessor(filename.GetFullName(), "", commandtree, pic, parameters, dib);
+	picdata->showParams();
+	picdata->processPic();
+	CommandTreeSetDisplay(picdata->GetId());
+	SetTitle(wxString::Format("rawproc: %s",filename.GetFullName()));
+	SetStatusText("");
+	SetStatusText("scale: fit",1);
+	pic->SetScaleToWidth();
+	pic->FitMode(true);
+	Refresh();
+	Update();
+}
+
 void rawprocFrm::CommandTreeStateClick(wxTreeEvent& event)
 {
 	CommandTreeSetDisplay(event.GetItem());
@@ -606,6 +672,17 @@ void rawprocFrm::Mnuopensource1004Click(wxCommandEvent& event)
 		OpenFileSource(fname);
 	}
 
+}
+
+void rawprocFrm::MnuopendcrawClick(wxCommandEvent& event)
+{
+	myFileSelector filediag(NULL, wxID_ANY, filename.GetPath(), "Open File with dcraw");
+
+	if(filediag.ShowModal() == wxID_OK)    {
+		wxFileName f(filediag.GetFileSelected());
+		wxSetWorkingDirectory (f.GetPath());
+        	OpenFileDCRaw(filediag.GetFileSelected(), filediag.GetFlag());
+	}
 }
 
 

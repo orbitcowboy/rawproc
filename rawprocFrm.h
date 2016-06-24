@@ -78,6 +78,7 @@ class rawprocFrm : public wxFrame
 		virtual ~rawprocFrm();
 		void Mnuopen1003Click(wxCommandEvent& event);
 		void Mnuopensource1004Click(wxCommandEvent& event);
+		void MnuopendcrawClick(wxCommandEvent& event);
 		
 	private:
 		//Do not add custom control declarations between
@@ -102,6 +103,7 @@ class rawprocFrm : public wxFrame
 			ID_MNU_OPENSOURCE = 1004,
 			ID_MNU_SAVE = 1005,
 			ID_MNU_ADD = 1006,
+			ID_MNU_OPENDCRAW = 1007,
 			ID_MNU_GAMMA = 1010,
 			ID_MNU_BRIGHT = 1011,
 			ID_MNU_CONTRAST = 1012,
@@ -149,6 +151,7 @@ class rawprocFrm : public wxFrame
 	void EXIFDialog(wxTreeItemId item);
 	void OpenFile(wxString fname, int flag);
 	void OpenFileSource(wxString fname);
+	void OpenFileDCRaw(wxString fname, int flag);
 	void Mnuadd1005Click(wxCommandEvent& event);
 	void Mnugamma1006Click(wxCommandEvent& event);
 	void Mnubright1007Click(wxCommandEvent& event);
